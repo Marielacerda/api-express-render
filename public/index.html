@@ -17,6 +17,12 @@
     .user-info { display: flex; align-items: center; gap: 12px; flex: 1; }
     .btn-delete { background-color: #dc3545; }
     .btn-delete:hover { background-color: #bd2130; }
+    .btn-edit { background-color: #007bff; }
+    .btn-edit:hover { background-color: #0069d9; }
+    .btn-cancel { background-color: #6c757d; }
+    .btn-cancel:hover { background-color: #5a6268; }
+    .actions { display: flex; gap: 8px; }
+    .edit-input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; }
   </style>
 </head>
 <body>
@@ -53,14 +59,59 @@
       list.innerHTML = '';
       users.forEach(user => {
         const li = document.createElement('li');
+        li.id = `user-${user.id}`;
         li.innerHTML = `
           <div class="user-info">
             <span><strong>#${user.id}</strong> - ${user.nome}</span>
           </div>
-          <button class="btn-delete" onclick="deleteUser(${user.id})">Excluir</button>
+          <div class="actions">
+            <button class="btn-edit" onclick="startEdit(${user.id})">Editar</button>
+            <button class="btn-delete" onclick="deleteUser(${user.id})">Excluir</button>
+          </div>
         `;
+        li.dataset.nome = user.nome;
         list.appendChild(li);
       });
+    }
+
+    // Mostra o campo de edição no lugar do nome
+    function startEdit(id) {
+      const li = document.getElementById(`user-${id}`);
+      const nomeAtual = li.dataset.nome;
+      li.innerHTML = `
+        <div class="user-info">
+          <strong>#${id}</strong>
+          <input type="text" class="edit-input" id="edit-${id}">
+        </div>
+        <div class="actions">
+          <button onclick="updateUser(${id})">Salvar</button>
+          <button class="btn-cancel" onclick="fetchUsers()">Cancelar</button>
+        </div>
+      `;
+      const input = document.getElementById(`edit-${id}`);
+      input.value = nomeAtual;
+      input.focus();
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') updateUser(id);
+        if (e.key === 'Escape') fetchUsers();
+      });
+    }
+
+    // 4. UPDATE: Editar usuário (PUT)
+    async function updateUser(id) {
+      const nome = document.getElementById(`edit-${id}`).value.trim();
+      if (!nome) return;
+      try {
+        const response = await fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: nome })
+        });
+        if (!response.ok) throw new Error('Erro ao editar usuário');
+        fetchUsers();
+      } catch (error) {
+        console.error('Erro na requisição PUT:', error);
+      }
     }
 
     // 2. CREATE: Adicionar novo usuário (POST)
